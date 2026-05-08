@@ -116,3 +116,106 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+
+    // pagination
+    const page = Number(searchParams.get("page")) || 1;
+    const limit = Number(searchParams.get("limit")) || 10;
+
+    const skip = (page - 1) * limit;
+
+    // filters
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status");
+    const priority = searchParams.get("priority");
+    const tag = searchParams.get("tags");
+
+    // dynamic where
+    const where: any = {};
+
+    // search
+    if (search) {
+      where.OR = [
+        {
+          title: {
+            contains: search,
+          },
+        },
+        {
+          description: {
+            contains: search,
+          },
+        },
+      ];
+    }
+
+    // status filter
+    if (status) {
+      where.status = status;
+    }
+
+    // priority filter
+    if (priority) {
+      where.priority = priority;
+    }
+
+    // tag filter
+    if (tag) {
+      where.task_tags = {
+        some: {
+          tags: {
+            name: tag,
+          },
+        },
+      };
+    }
+
+    // total count
+    const total = await prisma.tasks.count({
+      where,
+    });
+
+    // tasks
+    const tasks = await prisma.tasks.findMany({
+      where,
+      include: {
+        task_tags: {
+          include: {
+            tags: true,
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: tasks,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Internal server error",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}

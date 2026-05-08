@@ -227,3 +227,68 @@ export async function DELETE(
     );
   }
 }
+
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+
+    const taskId = Number(id);
+
+    if (isNaN(taskId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid task id",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const task = await prisma.tasks.findUnique({
+      where: {
+        id: taskId,
+      },
+      include: {
+        task_tags: {
+          include: {
+            tags: true,
+          },
+        },
+      },
+    });
+
+    if (!task) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Task not found",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: task,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Internal server error",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
