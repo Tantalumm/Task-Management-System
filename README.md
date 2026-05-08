@@ -86,5 +86,6 @@ A simple internal Task Management system built with Next.js, TypeScript, Prisma,
 - Create .env in folder task-managerment
 - DATABASE_URL="mysql://root:password@localhost:3306/taskdb"
 
+- cd .\task-management\app\
 - npm run dev
 - local : http://localhost:3000 สำหรับเปิดหน้าเว็บไซต์
